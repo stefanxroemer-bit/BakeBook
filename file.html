@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>🍽️ BakeBook</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body data-theme="dark">
+  <header class="hdr">
+    <h1 class="hdr-logo" onclick="showHome()">🍽️ BakeBook</h1>
+  </header>
+
+  <main id="app">
+    <section class="page on" id="page-home">
+      <h2>Willkommen bei <strong>BakeBook</strong>!</h2>
+      <p>Deine interaktive Küchen-App für Pizza, Brot, Pasta & Co.</p>
+      <button class="btn" onclick="startNewSession()">🔥 Neue Session starten</button>
+      <button class="btn-s" onclick="showPage('kochbuch')">📚 Kochbuch öffnen</button>
+    </section>
+
+    <section class="page" id="kochbuch">
+      <button class="btn-s" onclick="showPage('home')">← Zurück</button>
+      <h2>📚 Kochbuch</h2>
+      <div id="kb-content"></div>
+    </section>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
