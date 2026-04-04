@@ -1,5 +1,12 @@
 // --- Globale Variablen ---
-const pages = document.querySelectorAll(".page");
+let pages;
+
+window.onload = () => {
+  pages = document.querySelectorAll(".page");
+
+  const saved = localStorage.getItem("bakebook_theme");
+  if (saved) document.body.dataset.theme = saved;
+}
 let currentPage = "home";
 
 // --- Navigation ---
