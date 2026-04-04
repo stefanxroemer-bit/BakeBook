@@ -38,3 +38,20 @@ button {
   background: var(--tx);
   color: var(--bg);
 }
+
+/* ... dein bestehender Code ... */
+
+.btn-s {
+  background: var(--tx);
+  color: var(--bg);
+}
+
+/* Hier einfügen: */
+.page {
+  display: none;
+}
+
+.page.on {
+  display: block;
+}
+
