@@ -6,23 +6,15 @@ window.onload = () => {
 
   const saved = localStorage.getItem("bakebook_theme");
   if (saved) document.body.dataset.theme = saved;
-}
-let currentPage = "home";
+};
 
 // --- Navigation ---
 function showPage(id) {
   pages.forEach(p => p.classList.remove("on"));
   document.getElementById("page-" + id)?.classList.add("on");
-  currentPage = id;
 }
-
-function showHome() {
-  showPage("home");
-}
-
-function startNewSession() {
-  alert("Neue Session wird gestartet (Funktion folgt).");
-}
+function showHome() { showPage("home"); }
+function startNewSession() { alert("Neue Session wird gestartet."); }
 
 // --- Theme ---
 function toggleTheme() {
@@ -30,9 +22,3 @@ function toggleTheme() {
   document.body.dataset.theme = theme;
   localStorage.setItem("bakebook_theme", theme);
 }
-
-// --- Initialisierung ---
-window.onload = () => {
-  const saved = localStorage.getItem("bakebook_theme");
-  if (saved) document.body.dataset.theme = saved;
-};
