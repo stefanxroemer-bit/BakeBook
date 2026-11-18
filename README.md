@@ -1,6 +1,6 @@
 # Römers Küche
 
-Dein persönlicher Küchen-Assistent: 81 Rezepte in 15 Kategorien, geführter Kochmodus mit Timern, Kühlschrank-Suche und Einkaufsliste. Eine einzige HTML-Datei, kein Server, kein Login.
+Dein persönlicher Küchen-Assistent: 91 Rezepte in 15 Kategorien, geführter Kochmodus mit Timern, Kühlschrank-Suche und Einkaufsliste. Eine einzige HTML-Datei, kein Server, kein Login.
 
 **Stand:** 18.11.2026 · Design „Trattoria“
 
