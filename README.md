@@ -12,6 +12,7 @@ Dein persönlicher Küchen-Assistent: 91 Rezepte in 15 Kategorien, geführter Ko
 - „Was hab ich da?“: Rezepte aus dem Vorrat finden, inklusive Tauschvorschlägen
 - Einkaufsliste mit Abhaken und Kopieren
 - Favoriten, Bewertungen, eigene Notizen je Rezept
+- Koch-Zähler und Durchschnittsbewertung je Rezept (Bewertung nach jedem Kochen)
 - Druckansicht bzw. PDF je Rezept
 - Eigene Fotos je Rezept (Kamera oder Galerie, im Rezept auf „📷 Foto hinzufügen“)
 - Installierbar auf dem Handy, funktioniert offline

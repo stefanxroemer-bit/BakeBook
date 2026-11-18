@@ -245,6 +245,21 @@ body.no-tabs #toast{bottom:108px}
 .pic{position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;background:var(--tint,#EDE4D8)}
 .pic img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .pic .pe{font-size:3.2rem;line-height:1}
+.bdg{position:absolute;left:6px;right:6px;bottom:6px;display:flex;flex-wrap:wrap;gap:4px;pointer-events:none}
+.bdg span{background:rgba(255,255,255,.92);color:#3a2a20;border-radius:9px;padding:2px 7px;font-size:.78rem;font-weight:800;line-height:1.3;box-shadow:0 1px 3px rgba(0,0,0,.18)}
+.bdg .ba{color:var(--accent)}
+.r-row .pic .bdg{display:none}
+.r-row .s .bdg{position:static;display:inline-flex;margin-left:4px;vertical-align:1px}
+.r-row .s .bdg span{background:var(--accent-dim);box-shadow:none;font-size:.76rem;padding:1px 7px}
+.rate-ov{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center;z-index:200}
+.rate-sh{background:var(--surface);width:100%;max-width:560px;border-radius:22px 22px 0 0;padding:22px 18px calc(22px + env(safe-area-inset-bottom));text-align:center}
+.rate-sh h3{font-family:var(--fd);font-size:1.5rem;margin-bottom:4px}
+.rate-sh p{color:var(--text-dim);margin-bottom:12px}
+.rate-sh .stars{justify-content:center}
+.rate-sh .star{font-size:2.6rem;min-width:56px;min-height:56px}
+.cnt-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.cnt-row .btn{min-width:56px;min-height:48px;padding:0 14px}
+.cnt-row b{font-size:1.3rem;min-width:70px;text-align:center}
 .cat-grid{gap:12px}
 .cat-tile{flex-direction:column;align-items:stretch;gap:0;padding:0;overflow:hidden;min-height:0;border-color:var(--border-sub)}
 .cat-tile .pic{height:82px}
@@ -436,8 +451,9 @@ const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">"
 
 /* ---------- storage ---------- */
 const KEY = "bakebook3";
-let S = {ratings:{}, notes:{}, shop:[], portions:{}};
+let S = {ratings:{}, notes:{}, shop:[], portions:{}, cooked:{}, rateLog:{}};
 try { Object.assign(S, JSON.parse(localStorage.getItem(KEY) || "{}")); } catch(e) {}
+S.cooked = S.cooked || {}; S.rateLog = S.rateLog || {};
 function save(){ try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e) {} }
 
 /* ---------- helpers ---------- */
@@ -476,13 +492,26 @@ function portions(r){ return S.portions[r.id] || r.base; }
 function factor(r){ return r.scalable === false ? 1 : portions(r) / r.base; }
 function yieldLabel(r){ let y = r.yield.replace(/^\d+\s*/, ""); if (portions(r) !== r.base) y = y.replace(/\s*\(.*\)\s*/, " ").trim(); return y; }
 function stars(id){ const n = S.ratings[id] || 0; return n ? "★".repeat(n) : ""; }
+/* Zähler und Durchschnitt: jede Bewertung nach dem Kochen landet in rateLog. Ohne Log zählt die Sterne-Bewertung. */
+function cookCount(id){ return S.cooked[id] || 0; }
+function avgRating(id){
+  const l = (S.rateLog[id] || []).filter(v => v >= 1 && v <= 5);
+  if (l.length) return {avg: l.reduce((a, b) => a + b, 0) / l.length, n: l.length};
+  return S.ratings[id] ? {avg: S.ratings[id], n: 1} : null;
+}
+function fmtAvg(v){ return (Math.round(v * 10) / 10).toFixed(1).replace(".", ","); }
+function badges(id){
+  const c = cookCount(id), a = avgRating(id);
+  if (!c && !a) return "";
+  return `<div class="bdg">${c ? `<span class="bc" aria-label="${c}-mal gekocht">🍳 ${c}×</span>` : ""}${a ? `<span class="ba" aria-label="Durchschnitt ${fmtAvg(a.avg)} Sterne">★ ${fmtAvg(a.avg)}</span>` : ""}</div>`;
+}
 function searchText(r){ return (r.name + " " + r.cat + " " + r.ing.map(i => i.n).join(" ")).toLowerCase(); }
 
 
 /* ---------- Bilder (Titelbild optional über r.img, sonst Emoji auf Farbfläche) ---------- */
 const TINTS = ["#F3E1D6","#E7EBD9","#F1E6CB","#E1E8EE","#F1DCD7","#EAE2F0","#E3EEE6"];
 function tint(cat){ const i = Math.max(0, DATA.cats.indexOf(cat)); return TINTS[i % TINTS.length]; }
-function pic(r, cls, extra){ const u = photoOf(r); return `<div class="pic ${cls || ""}" style="--tint:${tint(r.cat)}">${u ? `<img src="${esc(u)}" alt="" loading="lazy">` : `<span class="pe" aria-hidden="true">${emo(r)}</span>`}${extra || ""}</div>`; }
+function pic(r, cls, extra){ const u = photoOf(r); return `<div class="pic ${cls || ""}" style="--tint:${tint(r.cat)}">${u ? `<img src="${esc(u)}" alt="" loading="lazy">` : `<span class="pe" aria-hidden="true">${emo(r)}</span>`}${extra || ""}${cls === "r-pic" ? "" : badges(r.id)}</div>`; }
 function catPic(c){ const r0 = RECIPES.find(r => r.cat === c && photoOf(r)); return `<div class="pic" style="--tint:${tint(c)}">${r0 ? `<img src="${esc(photoOf(r0))}" alt="" loading="lazy">` : `<span class="pe" aria-hidden="true">${CAT_EMOJI[c] || "🍽️"}</span>`}</div>`; }
 if (!Array.isArray(S.recent)) S.recent = [];
 function pushRecent(id){ S.recent = [id, ...S.recent.filter(x => x !== id)].slice(0, 10); save(); }
@@ -657,7 +686,7 @@ function renderList(){
     if (!listState.cat && !fav && r.cat !== lastCat) { h += `<div class="sec-t">${CAT_EMOJI[r.cat] || ""} ${esc(r.cat)}</div>`; lastCat = r.cat; }
     const t = times(r);
     const meta = [r.yield, t.total ? "⏱ " + fmtDur(t.total) : ""].filter(Boolean).join(" · ");
-    h += `<div class="r-row" data-go="r-${r.id}">${pic(r)}<div class="m"><div class="n">${esc(r.name)}</div><div class="s">${esc(meta)} <span class="stars-sm">${stars(r.id)}</span></div></div><div class="chev">›</div></div>`;
+    h += `<div class="r-row" data-go="r-${r.id}">${pic(r)}<div class="m"><div class="n">${esc(r.name)}</div><div class="s">${esc(meta)}${badges(r.id)}</div></div><div class="chev">›</div></div>`;
   });
   el.innerHTML = h;
 }
@@ -697,7 +726,8 @@ function renderRecipe(r){
     r.notes.map(n => { const m = n.match(/^([^:]{2,40}):\s*(.*)$/); return `<div class="note">${m ? `<b>${esc(m[1])}:</b> ${esc(m[2])}` : esc(n)}</div>`; }).join("") + `</div></div>`;
 
   h += `<div class="card"><div class="card-h"><span>Meine Notizen</span></div><div class="card-b" style="padding-top:14px"><textarea id="r-note" placeholder="z. B. Ofen 10 °C weniger, mehr Salz …">${esc(S.notes[r.id] || "")}</textarea></div></div>`;
-  h += `<div class="card"><div class="card-h"><span>Bewertung</span></div><div class="card-b"><div class="stars" id="r-stars"></div></div></div>`;
+  h += `<div class="card"><div class="card-h"><span>Bewertung</span></div><div class="card-b"><div class="stars" id="r-stars"></div><div class="hint" id="r-avg" style="text-align:left;padding:4px 0 0"></div></div></div>`;
+  h += `<div class="card"><div class="card-h"><span>So oft gekocht</span></div><div class="card-b" style="padding-top:12px"><div class="cnt-row"><button class="btn btn-s" onclick="bumpCooked(-1)" aria-label="Einmal weniger">−</button><b id="r-cnt"></b><button class="btn btn-s" onclick="bumpCooked(1)" aria-label="Einmal mehr">+</button></div><div class="hint" style="text-align:left;padding:6px 0 0">Zählt automatisch, wenn du im Kochmodus auf „Fertig“ tippst. Hier kannst du korrigieren.</div></div></div>`;
   h += `<div class="actions"><button class="btn btn-g btn-full" onclick="printRecipe()">🖨️ Drucken / als PDF speichern</button></div><div class="hint">Im Druckdialog „Als PDF speichern“ wählen.</div>`;
   document.getElementById("r-body").innerHTML = h;
   document.getElementById("r-note").addEventListener("input", e => { S.notes[r.id] = e.target.value; save(); });
@@ -710,7 +740,14 @@ function setPort(d){
   if (p === r.base) delete S.portions[r.id]; else S.portions[r.id] = p;
   save(); const y = window.scrollY; renderRecipe(r); window.scrollTo(0, y);
 }
+function renderCnt(){
+  const c = document.getElementById("r-cnt"); if (c) c.textContent = cookCount(curR.id) + "×";
+  const a = avgRating(curR.id), el = document.getElementById("r-avg");
+  if (el) el.textContent = a ? "Durchschnitt: ★ " + fmtAvg(a.avg) + " aus " + a.n + (a.n === 1 ? " Bewertung" : " Bewertungen") : "Noch keine Bewertung";
+}
+function bumpCooked(d){ const id = curR.id, n = Math.max(0, cookCount(id) + d); if (n) S.cooked[id] = n; else delete S.cooked[id]; save(); renderCnt(); }
 function renderStars(){
+  renderCnt();
   const n = S.ratings[curR.id] || 0;
   const el = document.getElementById("r-stars");
   el.innerHTML = [1,2,3,4,5].map(i => `<button class="star ${i <= n ? "on" : ""}" aria-label="${i} Sterne" data-n="${i}">${i <= n ? "★" : "☆"}</button>`).join("");
@@ -868,7 +905,21 @@ function leaveCook(){
   if (running) ask(running + (running === 1 ? " Timer läuft" : " Timer laufen") + " noch. Kochen trotzdem verlassen? Die Timer laufen im Hintergrund weiter.", back);
   else back();
 }
-function finishCook(){ toast("🎉 Guten Appetit!"); const id = cook.r.id; timers = timers.filter(t => !t.key.startsWith(id + ":")); cook = {r: null, i: 0}; go("r-" + id); }
+function finishCook(){ const id = cook.r.id; S.cooked[id] = cookCount(id) + 1; save(); timers = timers.filter(t => !t.key.startsWith(id + ":")); cook = {r: null, i: 0}; go("r-" + id); askRating(id); }
+function askRating(id){
+  const r = BY_ID[id], ov = document.createElement("div");
+  ov.className = "rate-ov";
+  ov.innerHTML = `<div class="rate-sh" role="dialog" aria-label="Bewerten"><h3>🎉 Guten Appetit!</h3><p>${esc(r.name)} · ${cookCount(id)}-mal gekocht. Wie war es heute?</p><div class="stars">${[1,2,3,4,5].map(i => `<button class="star" data-n="${i}" aria-label="${i} Sterne">☆</button>`).join("")}</div><button class="btn btn-g btn-full" data-skip style="margin-top:10px">Überspringen</button></div>`;
+  document.body.appendChild(ov);
+  const close = () => { ov.remove(); if (curR && curR.id === id) renderStars(); renderHome && document.getElementById("v-home").classList.contains("active") && renderHome(); };
+  ov.querySelectorAll(".star").forEach(b => b.onclick = () => {
+    const v = +b.dataset.n; (S.rateLog[id] = S.rateLog[id] || []).push(v); S.ratings[id] = v; save();
+    ov.querySelectorAll(".star").forEach(x => x.textContent = +x.dataset.n <= v ? "★" : "☆");
+    setTimeout(() => { close(); toast("Danke! Ø ★ " + fmtAvg(avgRating(id).avg)); }, 350);
+  });
+  ov.querySelector("[data-skip]").onclick = close;
+  ov.onclick = e => { if (e.target === ov) close(); };
+}
 document.getElementById("k-back").onclick = leaveCook;
 
 /* ---------- Kühlschrank-Suche ---------- */
