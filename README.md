@@ -13,6 +13,7 @@ Dein persönlicher Küchen-Assistent: 81 Rezepte in 15 Kategorien, geführter Ko
 - Einkaufsliste mit Abhaken und Kopieren
 - Favoriten, Bewertungen, eigene Notizen je Rezept
 - Druckansicht bzw. PDF je Rezept
+- Eigene Fotos je Rezept (Kamera oder Galerie, im Rezept auf „📷 Foto hinzufügen“)
 - Installierbar auf dem Handy, funktioniert offline
 
 ## Veröffentlichen mit GitHub Pages
@@ -36,12 +37,12 @@ Danach startet die App wie eine normale App und funktioniert auch ohne Internet.
 ## Update einspielen
 
 1. Neue `index.html` hochladen (Upload files, bestehende Datei ersetzen).
-2. In `sw.js` die Zeile `const VERSION = "rk-2026-11-18";` auf das neue Datum ändern.
+2. In `sw.js` die Zeile `const VERSION = "…";` auf einen neuen Wert ändern (z. B. Datum).
 3. Commit. Geräte holen sich die neue Version beim nächsten Öffnen mit Internet.
 
 ## Daten
 
-- Alles wird im Browser des jeweiligen Geräts gespeichert (localStorage): Einkaufsliste, Notizen, Bewertungen, Vorrat.
+- Alles wird im Browser des jeweiligen Geräts gespeichert: Einkaufsliste, Notizen, Bewertungen, Vorrat (localStorage) und eigene Fotos (IndexedDB, auf ca. 1400 px verkleinert).
 - Kein Abgleich zwischen Geräten. Die Cloud-Speicherung des Vorrats gibt es nur in der Claude-Version der App.
 - Die GitHub-Version und die Claude-Version teilen keine Daten.
 - Browserdaten löschen = App-Daten weg.

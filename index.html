@@ -323,6 +323,14 @@ body:not(.v-rezept) .r-cta{display:none}
 .shop-r .q{color:var(--accent-mid)}
 .fsw{color:var(--wait)}
 
+/* Eigene Fotos */
+.r-pic{position:relative}
+.ph-bar{position:absolute;right:12px;bottom:12px;display:flex;gap:8px}
+.ph-btn{min-height:48px;padding:0 16px;border-radius:24px;border:0;background:rgba(255,255,255,.94);color:var(--text);font-weight:800;font-size:.95rem;
+  display:inline-flex;align-items:center;gap:8px;cursor:pointer;box-shadow:0 2px 10px rgba(42,33,27,.18)}
+.ph-btn:active{transform:scale(.97)}
+.ph-btn.del{width:48px;padding:0;justify-content:center;color:var(--danger)}
+.ph-busy{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(251,247,241,.75);font-weight:800}
 /* print */
 #print-area{display:none}
 @media print{
@@ -413,6 +421,7 @@ body:not(.v-rezept) .r-cta{display:none}
 <div class="r-cta"><button class="btn btn-p" id="r-cook">▶ Kochen starten</button></div>
 <div class="dlg" id="dlg"><div class="box"><p id="dlg-msg"></p><div class="row"><button class="btn btn-s" id="dlg-no">Abbrechen</button><button class="btn btn-d" id="dlg-yes">Ja</button></div></div></div>
 <div id="toast"></div>
+<input type="file" id="ph-file" accept="image/*" hidden>
 <div id="print-area"></div>
 
 <script>
@@ -473,8 +482,8 @@ function searchText(r){ return (r.name + " " + r.cat + " " + r.ing.map(i => i.n)
 /* ---------- Bilder (Titelbild optional über r.img, sonst Emoji auf Farbfläche) ---------- */
 const TINTS = ["#F3E1D6","#E7EBD9","#F1E6CB","#E1E8EE","#F1DCD7","#EAE2F0","#E3EEE6"];
 function tint(cat){ const i = Math.max(0, DATA.cats.indexOf(cat)); return TINTS[i % TINTS.length]; }
-function pic(r, cls){ return `<div class="pic ${cls || ""}" style="--tint:${tint(r.cat)}">${r.img ? `<img src="${esc(r.img)}" alt="" loading="lazy">` : `<span class="pe" aria-hidden="true">${emo(r)}</span>`}</div>`; }
-function catPic(c){ const r0 = RECIPES.find(r => r.cat === c && r.img); return `<div class="pic" style="--tint:${tint(c)}">${r0 ? `<img src="${esc(r0.img)}" alt="" loading="lazy">` : `<span class="pe" aria-hidden="true">${CAT_EMOJI[c] || "🍽️"}</span>`}</div>`; }
+function pic(r, cls, extra){ const u = photoOf(r); return `<div class="pic ${cls || ""}" style="--tint:${tint(r.cat)}">${u ? `<img src="${esc(u)}" alt="" loading="lazy">` : `<span class="pe" aria-hidden="true">${emo(r)}</span>`}${extra || ""}</div>`; }
+function catPic(c){ const r0 = RECIPES.find(r => r.cat === c && photoOf(r)); return `<div class="pic" style="--tint:${tint(c)}">${r0 ? `<img src="${esc(photoOf(r0))}" alt="" loading="lazy">` : `<span class="pe" aria-hidden="true">${CAT_EMOJI[c] || "🍽️"}</span>`}</div>`; }
 if (!Array.isArray(S.recent)) S.recent = [];
 function pushRecent(id){ S.recent = [id, ...S.recent.filter(x => x !== id)].slice(0, 10); save(); }
 function dailyPicks(n){
@@ -483,6 +492,80 @@ function dailyPicks(n){
   const out = []; let x = seed;
   while (out.length < Math.min(n, pool.length)) { x = (x * 9301 + 49297) % 233280; const r = pool[x % pool.length]; if (!out.includes(r)) out.push(r); }
   return out;
+}
+
+/* ---------- Eigene Fotos (IndexedDB, nur auf diesem Gerät) ---------- */
+const PH = {db: null, urls: {}, mem: false};
+function phOpen(){
+  return new Promise(res => {
+    try {
+      const rq = indexedDB.open("rk-fotos", 1);
+      rq.onupgradeneeded = () => rq.result.createObjectStore("fotos");
+      rq.onsuccess = () => res(rq.result);
+      rq.onerror = () => res(null);
+      rq.onblocked = () => res(null);
+    } catch (e) { res(null); }
+  });
+}
+function phTx(mode, fn){
+  return new Promise((res, rej) => {
+    if (!PH.db) return rej(new Error("kein Speicher"));
+    try { const tx = PH.db.transaction("fotos", mode), st = tx.objectStore("fotos"); const out = fn(st); tx.oncomplete = () => res(out && out.result); tx.onerror = () => rej(tx.error); tx.onabort = () => rej(tx.error); }
+    catch (e) { rej(e); }
+  });
+}
+async function phInit(){
+  PH.db = await phOpen();
+  if (!PH.db) { PH.mem = true; return; }
+  try {
+    const keys = await new Promise((res, rej) => { const tx = PH.db.transaction("fotos"), rq = tx.objectStore("fotos").getAllKeys(); rq.onsuccess = () => res(rq.result); rq.onerror = () => rej(rq.error); });
+    for (const k of keys) {
+      const blob = await new Promise((res, rej) => { const rq = PH.db.transaction("fotos").objectStore("fotos").get(k); rq.onsuccess = () => res(rq.result); rq.onerror = () => rej(rq.error); });
+      if (blob) PH.urls[k] = URL.createObjectURL(blob);
+    }
+  } catch (e) { PH.mem = true; }
+  if (Object.keys(PH.urls).length) route();
+}
+function photoOf(r){ return PH.urls[r.id] || r.img || ""; }
+function shrink(file, max){
+  return new Promise((res, rej) => {
+    const url = URL.createObjectURL(file), img = new Image();
+    img.onload = () => {
+      const k = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
+      const c = document.createElement("canvas"); c.width = Math.round(img.naturalWidth * k); c.height = Math.round(img.naturalHeight * k);
+      c.getContext("2d").drawImage(img, 0, 0, c.width, c.height); URL.revokeObjectURL(url);
+      c.toBlob(b => b ? res(b) : rej(new Error("Bild nicht lesbar")), "image/jpeg", .82);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); rej(new Error("Bild nicht lesbar")); };
+    img.src = url;
+  });
+}
+function pickPhoto(){ const f = document.getElementById("ph-file"); f.value = ""; f.click(); }
+document.getElementById("ph-file").addEventListener("change", async e => {
+  const file = e.target.files && e.target.files[0], r = curR;
+  if (!file || !r) return;
+  const box = document.querySelector("#r-body .r-pic");
+  if (box) box.insertAdjacentHTML("beforeend", `<div class="ph-busy">Foto wird gespeichert …</div>`);
+  try {
+    const blob = await shrink(file, 1400);
+    let saved = false;
+    try { await phTx("readwrite", st => st.put(blob, r.id)); saved = true; } catch (err) {}
+    if (PH.urls[r.id]) URL.revokeObjectURL(PH.urls[r.id]);
+    PH.urls[r.id] = URL.createObjectURL(blob);
+    const y = window.scrollY; renderRecipe(r); window.scrollTo(0, y);
+    toast(saved ? "📷 Foto gespeichert" : "📷 Foto nur bis zum Schließen der App gespeichert");
+  } catch (err) {
+    const b = document.querySelector("#r-body .ph-busy"); if (b) b.remove();
+    toast("Foto konnte nicht gelesen werden");
+  }
+});
+function delPhoto(){
+  const r = curR; if (!r || !PH.urls[r.id]) return;
+  ask("Dein Foto von „" + r.name + "“ entfernen?", async () => {
+    try { await phTx("readwrite", st => st.delete(r.id)); } catch (e) {}
+    URL.revokeObjectURL(PH.urls[r.id]); delete PH.urls[r.id];
+    const y = window.scrollY; renderRecipe(r); window.scrollTo(0, y); toast("Foto entfernt");
+  });
 }
 
 /* ---------- toast + dialog ---------- */
@@ -587,7 +670,9 @@ function renderRecipe(r){
   document.getElementById("r-title").textContent = r.name;
   const t = times(r), f = factor(r), p = portions(r);
   pushRecent(r.id);
-  let h = pic(r, "r-pic") + `<div class="r-hero"><div class="cat">${esc(r.cat)}</div><h2>${esc(r.name)}</h2></div><div class="stats">`;
+  const own = !!PH.urls[r.id];
+  const phBar = `<div class="ph-bar"><button class="ph-btn" onclick="pickPhoto()">📷 ${own ? "Foto ändern" : (r.img ? "Eigenes Foto" : "Foto hinzufügen")}</button>${own ? `<button class="ph-btn del" onclick="delPhoto()" aria-label="Eigenes Foto entfernen">✕</button>` : ""}</div>`;
+  let h = pic(r, "r-pic", phBar) + `<div class="r-hero"><div class="cat">${esc(r.cat)}</div><h2>${esc(r.name)}</h2></div><div class="stats">`;
   h += `<div class="stat"><b>${t.act ? fmtDur(t.act) : "–"}</b><small>aktiv</small></div>`;
   h += `<div class="stat w"><b>${t.wait ? fmtDur(t.wait) : "–"}</b><small>Warten</small></div>`;
   h += `<div class="stat"><b>${r.steps.length}</b><small>Schritte</small></div></div>`;
@@ -999,6 +1084,7 @@ async function initCloud(){
 initCloud();
 
 route();
+phInit();
 
 /* ---------- Offline (nur auf GitHub Pages / eigenem Server) ---------- */
 if ("serviceWorker" in navigator && location.protocol === "https:" && !window.claude) {
