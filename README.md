@@ -1,8 +1,10 @@
 # Römers Küche
 
+**👉 App öffnen: https://stefanxroemer-bit.github.io/BakeBook/**
+
 Dein persönlicher Küchen-Assistent: 91 Rezepte in 15 Kategorien, geführter Kochmodus mit Timern, Kühlschrank-Suche und Einkaufsliste. Eine einzige HTML-Datei, kein Server, kein Login.
 
-**Stand:** 18.11.2026 · Design „Trattoria“
+**Stand:** 23.11.2026 · Version 4.7 (steht klein auf der Startseite der App)
 
 ## Funktionen
 
@@ -12,6 +14,7 @@ Dein persönlicher Küchen-Assistent: 91 Rezepte in 15 Kategorien, geführter Ko
 - „Was hab ich da?“: Rezepte aus dem Vorrat finden, inklusive Tauschvorschlägen
 - Einkaufsliste mit Abhaken und Kopieren
 - Favoriten, Bewertungen, eigene Notizen je Rezept
+- Kochmodus zeigt je Schritt die benötigten Zutaten mit Mengen
 - Koch-Zähler und Durchschnittsbewertung je Rezept (Bewertung nach jedem Kochen)
 - Druckansicht bzw. PDF je Rezept
 - Eigene Fotos je Rezept (Kamera oder Galerie, im Rezept auf „📷 Foto hinzufügen“)

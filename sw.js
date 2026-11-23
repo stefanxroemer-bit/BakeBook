@@ -1,6 +1,6 @@
 /* Römers Küche – Offline-Speicher
    Bei jeder neuen App-Version VERSION hochzählen, dann holen sich alle Geräte die neue Fassung. */
-const VERSION = "rk-2026-11-23b";
+const VERSION = "rk-2026-11-23c";
 const CORE = [
   "./",
   "./index.html",
@@ -37,10 +37,10 @@ self.addEventListener("fetch", e => {
   }
   if (url.origin !== location.origin) return;
 
-  // App-Seite: zuerst Netz (immer neueste Version), offline aus dem Speicher
+  // App-Seite: zuerst Netz ohne Browser-Cache (immer neueste Version), offline aus dem Speicher
   if (req.mode === "navigate" || url.pathname.endsWith("/index.html")) {
     e.respondWith(
-      fetch(req).then(res => { const copy = res.clone(); caches.open(VERSION).then(c => c.put("./index.html", copy)); return res; })
+      fetch(req.url, {cache: "no-store"}).then(res => { const copy = res.clone(); caches.open(VERSION).then(c => c.put("./index.html", copy)); return res; })
         .catch(() => caches.match("./index.html"))
     );
     return;
