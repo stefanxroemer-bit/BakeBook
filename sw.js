@@ -1,6 +1,6 @@
 /* Römers Küche – Offline-Speicher
    Bei jeder neuen App-Version VERSION hochzählen, dann holen sich alle Geräte die neue Fassung. */
-const VERSION = "rk-2026-11-24a";
+const VERSION = "rk-2026-11-24b";
 const CORE = [
   "./",
   "./index.html",
