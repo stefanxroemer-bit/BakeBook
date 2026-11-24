@@ -1,6 +1,6 @@
 /* Römers Küche – Offline-Speicher
    Bei jeder neuen App-Version VERSION hochzählen, dann holen sich alle Geräte die neue Fassung. */
-const VERSION = "rk-2026-11-23c";
+const VERSION = "rk-2026-11-24a";
 const CORE = [
   "./",
   "./index.html",
@@ -48,4 +48,14 @@ self.addEventListener("fetch", e => {
 
   // Icons und Manifest: zuerst Speicher
   e.respondWith(caches.match(req).then(hit => hit || fetch(req)));
+});
+
+// Timer-Alarm: Tippen auf die Benachrichtigung öffnet die App beim richtigen Rezept
+self.addEventListener("notificationclick", e => {
+  e.notification.close();
+  const url = (e.notification.data && e.notification.data.url) || "./";
+  e.waitUntil(self.clients.matchAll({type: "window", includeUncontrolled: true}).then(list => {
+    for (const c of list) { if ("focus" in c) { c.navigate && c.navigate(url).catch(() => {}); return c.focus(); } }
+    return self.clients.openWindow(url);
+  }));
 });
